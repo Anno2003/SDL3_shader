@@ -86,7 +86,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]){
         SDL_Log("Couldn't create window : %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
-	
+	SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, "60");
 	// create gl context
 	gl_context = SDL_GL_CreateContext(window);
 	if (gl_context == NULL){
@@ -148,25 +148,18 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
 /* loop */
 SDL_AppResult SDL_AppIterate(void *appstate){
 	int w, h;
-	double timeValue = (double)SDL_GetTicks() / 1000.0;;
-	float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-	int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
 	SDL_GetWindowSize(window, &w, &h);
 	glViewport(0, 0, w, h);
 	
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
-        
+    
 	glUseProgram(shaderProgram);
 	CheckGLError("glUseProgram");
-	
-	glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
-	CheckGLError("glUniform4f");
 	
 	glUniform2f(glGetUniformLocation(shaderProgram, "resolution"), (float)w, (float)h);
 	CheckGLError("glUniform2f");
 
-	
 	glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 	
