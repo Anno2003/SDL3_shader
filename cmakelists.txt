@@ -17,7 +17,6 @@ target_link_libraries(main
         SDL3::SDL3
         GLEW::GLEW
         opengl32
-        "-mwindows"
 )
 
 if(MINGW)
