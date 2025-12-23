@@ -20,3 +20,7 @@ The executable is in the `build` directory:
 cd build
 ./main
 ```
+
+---
+
+- https://glusoft.com/sdl3-tutorials/opengl-shaders-blur-sdl3/
