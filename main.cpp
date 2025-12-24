@@ -1,7 +1,7 @@
 #define SDL_MAIN_USE_CALLBACKS 1
+#include <glad/gl.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-#include <GL/glew.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -95,14 +95,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]){
 	}
 	SDL_GL_MakeCurrent(window, gl_context);
 	
-	glewExperimental = GL_TRUE; // Fixes issues with some drivers
-    GLenum err = glewInit();
-    if (err != GLEW_OK) {
-        SDL_Log("GLEW Init Error: %s", SDL_GetError());
-        SDL_GL_DestroyContext(gl_context);
-        SDL_DestroyWindow(window);
-        return SDL_APP_FAILURE;
-    }
+	int version = gladLoadGL((GLADloadfunc) SDL_GL_GetProcAddress);
+    printf("GL %d.%d\n", GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
 	
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
