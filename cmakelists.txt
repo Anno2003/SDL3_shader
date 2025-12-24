@@ -54,3 +54,17 @@ if(MINGW)
         VERBATIM
     )
 endif()
+
+# Copy Vertex Shader
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/vertex_shader.glsl"
+    "${CMAKE_CURRENT_BINARY_DIR}/vertex_shader.glsl"
+    COPYONLY
+)
+
+# Copy Fragment Shader
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/frag_shader.glsl"
+    "${CMAKE_CURRENT_BINARY_DIR}/frag_shader.glsl"
+    COPYONLY
+)
