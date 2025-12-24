@@ -1,6 +1,6 @@
 # SDL3 Shader
 a small sdl3 program that displays shader into a transparent window that always stays on top.
-![example](example.png)
+![example](example.png)  
 you can change the shader by editing `frag_shader.glsl` and `vertex_shader.glsl`
 
 # MSYS2 ucrt64 Dependencies
