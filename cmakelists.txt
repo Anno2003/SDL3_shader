@@ -68,3 +68,11 @@ configure_file(
     "${CMAKE_CURRENT_BINARY_DIR}/frag_shader.glsl"
     COPYONLY
 )
+
+install(TARGETS main DESTINATION .)
+install(FILES 
+    "${CMAKE_CURRENT_BINARY_DIR}/vertex_shader.glsl" 
+    "${CMAKE_CURRENT_BINARY_DIR}/frag_shader.glsl" 
+    "${CMAKE_CURRENT_BINARY_DIR}/SDL3.dll"
+    DESTINATION .
+)

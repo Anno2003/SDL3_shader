@@ -81,7 +81,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]){
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	
     /* Create the window */
-	window = SDL_CreateWindow("Glass Shader", 600, 600, SDL_WINDOW_TRANSPARENT|SDL_WINDOW_ALWAYS_ON_TOP|SDL_WINDOW_RESIZABLE|SDL_WINDOW_OPENGL); 
+	window = SDL_CreateWindow("SDL3 Shader", 600, 600, SDL_WINDOW_TRANSPARENT|SDL_WINDOW_ALWAYS_ON_TOP|SDL_WINDOW_RESIZABLE|SDL_WINDOW_OPENGL); 
     if (!window) {
         SDL_Log("Couldn't create window : %s", SDL_GetError());
         return SDL_APP_FAILURE;
