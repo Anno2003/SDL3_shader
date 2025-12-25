@@ -141,7 +141,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
 
 /* loop */
 SDL_AppResult SDL_AppIterate(void *appstate){
+    float time = SDL_GetTicks()/1000.0f; 
 	int w, h;
+    float x,y;
+    SDL_MouseButtonFlags buttonState = SDL_GetMouseState(&x,&y);
+    
 	SDL_GetWindowSize(window, &w, &h);
 	glViewport(0, 0, w, h);
 	
@@ -150,9 +154,15 @@ SDL_AppResult SDL_AppIterate(void *appstate){
     
 	glUseProgram(shaderProgram);
 	CheckGLError("glUseProgram");
+
+    glUniform1f(glGetUniformLocation(shaderProgram,"u_time"),time);
+    CheckGLError("glUniform1f");
 	
-	glUniform2f(glGetUniformLocation(shaderProgram, "resolution"), (float)w, (float)h);
+	glUniform2f(glGetUniformLocation(shaderProgram, "u_resolution"), (float)w, (float)h);
 	CheckGLError("glUniform2f");
+
+    glUniform2f(glGetUniformLocation(shaderProgram,"u_mouse"),x,y);
+    CheckGLError("glUniform2f");
 
 	glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
