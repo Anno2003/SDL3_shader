@@ -1,5 +1,8 @@
 #define SDL_MAIN_USE_CALLBACKS 1
 #include <glad/gl.h>
+#include "imgui.h"
+#include "imgui_impl_sdl3.h"
+#include "imgui_impl_opengl3.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <iostream>
@@ -175,11 +178,25 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]){
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;        // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;      // Enable Multi-Viewport
+    ImGui::StyleColorsDark();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplSDL3_InitForOpenGL(window, gl_context);
+    ImGui_ImplOpenGL3_Init();
+
     return SDL_APP_CONTINUE;
 }
 
 /* updates on event */
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
+    ImGui_ImplSDL3_ProcessEvent(event);
     if (event->type == SDL_EVENT_KEY_DOWN ||
         event->type == SDL_EVENT_QUIT) {
         return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
@@ -197,6 +214,14 @@ SDL_AppResult SDL_AppIterate(void *appstate){
 	SDL_GetWindowSize(window, &w, &h);
 	glViewport(0, 0, w, h);
 	
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::Begin("Hello, world!");                          
+    ImGui::Text("This is some useful text.");  
+    ImGui::End();
+
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
     
@@ -215,8 +240,21 @@ SDL_AppResult SDL_AppIterate(void *appstate){
 	glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 	
+
+    // Rendering
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable){
+        SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
+        SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
+    
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+    
+        SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+    }
 	SDL_GL_SwapWindow(window);
-	
     return SDL_APP_CONTINUE;
 }
 
