@@ -12,6 +12,31 @@ static SDL_GLContext gl_context = NULL;
 static GLuint shaderProgram;
 static GLuint VAO, VBO;
 
+const char* defaultVertexShader   = R"(
+    #version 330 core
+    layout (location = 0) in vec3 aPos;
+  
+    out vec4 vertexColor;
+
+    void main(){
+        gl_Position = vec4(aPos, 1.0);
+        vertexColor = vec4(0.0, 0.0, 0.0, 0.0);
+    }
+)";
+
+const char* defaultFragmentShader = R"(
+    #version 330 core
+
+    uniform vec2 u_resolution;
+    uniform vec2 u_mouse;
+    uniform float u_time;
+    
+    void main(){
+        vec2 st = gl_FragCoord.xy/u_resolution;
+        gl_FragColor = vec4(st.x,st.y,abs(sin(u_time)),abs(cos(u_time)));
+    } 
+)";
+
 void CheckShaderCompilation(GLuint shader, const char* type) {
     GLint success;
     GLchar infoLog[1024];
@@ -68,6 +93,29 @@ GLuint LoadShader(const char* vertexPath, const char* fragmentPath) {
     return shaderProgram;
 }
 
+GLuint LoadDefaultShader(){
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader,1,&defaultVertexShader,NULL);
+    glCompileShader(vertexShader);
+    CheckShaderCompilation(vertexShader,"VERTEX");
+
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader,1,&defaultFragmentShader,NULL);
+    glCompileShader(fragmentShader);
+    CheckShaderCompilation(fragmentShader,"FRAGMENT");
+
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram,vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+    CheckShaderLinking(shaderProgram);
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    return shaderProgram;
+}
+
 void CheckGLError(const char* function) {
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR) {
@@ -101,7 +149,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]){
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
-	shaderProgram = LoadShader("vertex_shader.glsl", "frag_shader.glsl");
+	shaderProgram = LoadDefaultShader();
 	
 	float vertices[] = {
 		// Pos      // UV (Texture Coords)
