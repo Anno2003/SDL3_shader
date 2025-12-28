@@ -5,6 +5,7 @@
 #include "imgui_impl_opengl3.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include <SDL3/SDL_dialog.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -15,6 +16,7 @@ static SDL_GLContext gl_context = NULL;
 static GLuint shaderProgram;
 static GLuint VAO, VBO;
 
+// DEFAULT SHADERS ////
 const char* defaultVertexShader   = R"(
     #version 330 core
     layout (location = 0) in vec3 aPos;
@@ -40,6 +42,7 @@ const char* defaultFragmentShader = R"(
     } 
 )";
 
+// OpenGL Helpers ////
 void CheckShaderCompilation(GLuint shader, const char* type) {
     GLint success;
     GLchar infoLog[1024];
@@ -125,6 +128,67 @@ void CheckGLError(const char* function) {
         std::cerr << "OpenGL Error in " << function << ": " << err << std::endl;
     }
 }
+
+// File Saving & Loading ////
+static const SDL_DialogFileFilter file_filters[] = {
+    { "glsl shader",  "glsl" },
+    { "All files",   "*" }
+};
+
+static void SDLCALL save_callback(void* userdata, const char* const* filelist, int filter){// TODO
+    if (!filelist) {
+        SDL_Log("An error occured: %s", SDL_GetError());
+        return;
+    } else if (!*filelist) {
+        SDL_Log("The user did not select any file.");
+        SDL_Log("Most likely, the dialog was canceled.");
+        return;
+    }
+
+    while (*filelist) {
+        SDL_Log("Full path to selected file: '%s'", *filelist);
+        filelist++;
+    }
+
+    if (filter < 0) {
+        SDL_Log("The current platform does not support fetching "
+                "the selected filter, or the user did not select"
+                " any filter.");
+        return;
+    } else if (filter < SDL_arraysize(file_filters)) {
+        SDL_Log("The filter selected by the user is '%s' (%s).",
+                file_filters[filter].pattern, file_filters[filter].name);
+        return;
+    }
+}
+
+static void SDLCALL load_callback(void* userdata, const char* const* filelist, int filter){// TODO
+    if (!filelist) {
+        SDL_Log("An error occured: %s", SDL_GetError());
+        return;
+    } else if (!*filelist) {
+        SDL_Log("The user did not select any file.");
+        SDL_Log("Most likely, the dialog was canceled.");
+        return;
+    }
+
+    while (*filelist) {
+        SDL_Log("Full path to selected file: '%s'", *filelist);
+        filelist++;
+    }
+
+    if (filter < 0) {
+        SDL_Log("The current platform does not support fetching "
+                "the selected filter, or the user did not select"
+                " any filter.");
+        return;
+    } else if (filter < SDL_arraysize(file_filters)) {
+        SDL_Log("The filter selected by the user is '%s' (%s).",
+                file_filters[filter].pattern, file_filters[filter].name);
+        return;
+    }
+}
+
 
 /* init */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]){
@@ -220,8 +284,12 @@ SDL_AppResult SDL_AppIterate(void *appstate){
 
     if(ImGui::BeginMainMenuBar()){
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("Save Shader", "Ctrl+S")) { /* Do something */ }
-            if (ImGui::MenuItem("Load Shader", "Ctrl+O")) { /* Do something */ }
+            if (ImGui::MenuItem("Save Shader", "Ctrl+S")) {
+                SDL_ShowSaveFileDialog(save_callback, NULL, window, file_filters, SDL_arraysize(file_filters), ".\\"); // for now windows only path
+            }
+            if (ImGui::MenuItem("Load Shader", "Ctrl+O")) {
+                SDL_ShowOpenFileDialog(load_callback, NULL, window, file_filters, SDL_arraysize(file_filters), ".\\",false); // for now windows only path
+            }
             ImGui::Separator();
             if (ImGui::MenuItem("Preferences")) {}
             if (ImGui::MenuItem("Quit")) { return SDL_APP_SUCCESS; }
