@@ -185,6 +185,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]){
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;        // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;      // Enable Multi-Viewport
+    io.FontGlobalScale = 1.5f;
     ImGui::StyleColorsDark();
 
     // Setup Platform/Renderer backends
@@ -197,8 +198,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]){
 /* updates on event */
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
     ImGui_ImplSDL3_ProcessEvent(event);
-    if (event->type == SDL_EVENT_KEY_DOWN ||
-        event->type == SDL_EVENT_QUIT) {
+    if (event->type == SDL_EVENT_QUIT) {
         return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
     }
     return SDL_APP_CONTINUE;
@@ -218,9 +218,21 @@ SDL_AppResult SDL_AppIterate(void *appstate){
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Begin("Hello, world!");                          
-    ImGui::Text("This is some useful text.");  
-    ImGui::End();
+    if(ImGui::BeginMainMenuBar()){
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("Save Shader", "Ctrl+S")) { /* Do something */ }
+            if (ImGui::MenuItem("Load Shader", "Ctrl+O")) { /* Do something */ }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Preferences")) {}
+            if (ImGui::MenuItem("Quit")) { return SDL_APP_SUCCESS; }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Edit Fragment Shader")){}
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
 
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -240,7 +252,6 @@ SDL_AppResult SDL_AppIterate(void *appstate){
 	glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 	
-
     // Rendering
     ImGuiIO& io = ImGui::GetIO();
     ImGui::Render();
