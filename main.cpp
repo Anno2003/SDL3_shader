@@ -65,42 +65,6 @@ void CheckShaderLinking(GLuint program) {
     }
 }
 
-GLuint LoadShader(const char* vertexPath, const char* fragmentPath) {
-    std::ifstream vShaderFile(vertexPath);
-    std::ifstream fShaderFile(fragmentPath);
-    std::stringstream vShaderStream, fShaderStream;
-
-    vShaderStream << vShaderFile.rdbuf();
-    fShaderStream << fShaderFile.rdbuf();
-
-    std::string vShaderCode = vShaderStream.str();
-    std::string fShaderCode = fShaderStream.str();
-
-    const char* vShaderSource = vShaderCode.c_str();
-    const char* fShaderSource = fShaderCode.c_str();
-
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vShaderSource, NULL);
-    glCompileShader(vertexShader);
-    CheckShaderCompilation(vertexShader, "VERTEX");
-
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fShaderSource, NULL);
-    glCompileShader(fragmentShader);
-    CheckShaderCompilation(fragmentShader, "FRAGMENT");
-
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-    CheckShaderLinking(shaderProgram);
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    return shaderProgram;
-}
-
 GLuint LoadDefaultShader(){
     const char* vsrc = defaultVertexShader.c_str(); 
     const char* fsrc = defaultFragmentShader.c_str();
@@ -302,26 +266,42 @@ SDL_AppResult SDL_AppIterate(void *appstate){
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
+    // shortcuts
+    bool request_save =ImGui::Shortcut((ImGuiKey_S|ImGuiMod_Ctrl),ImGuiInputFlags_RouteGlobal);
+    bool request_load = ImGui::Shortcut((ImGuiKey_O|ImGuiMod_Ctrl),ImGuiInputFlags_RouteGlobal);
+    bool request_preferences = ImGui::Shortcut((ImGuiKey_Comma|ImGuiMod_Ctrl),ImGuiInputFlags_RouteGlobal);
+    bool request_quit = ImGui::Shortcut((ImGuiKey_Q|ImGuiMod_Ctrl),ImGuiInputFlags_RouteGlobal);
+
+
     if(ImGui::BeginMainMenuBar()){
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("Save Shader", "Ctrl+S")) {
-                SDL_ShowSaveFileDialog(save_callback, NULL, window, file_filters, SDL_arraysize(file_filters), ".\\"); // for now windows only path
-            }
-            if (ImGui::MenuItem("Load Shader", "Ctrl+O")) {
-                SDL_ShowOpenFileDialog(load_callback, NULL, window, file_filters, SDL_arraysize(file_filters), ".\\",false); // for now windows only path
-            }
+            
+            if (ImGui::MenuItem("Save Shader", "Ctrl+S")||request_save) {request_save = true;}
+            if (ImGui::MenuItem("Load Shader", "Ctrl+O")||request_load) {request_load = true;}
+            
             ImGui::Separator();
-            if (ImGui::MenuItem("Preferences")) {}
-            if (ImGui::MenuItem("Quit")) { return SDL_APP_SUCCESS; }
+            if (ImGui::MenuItem("Preferences", "Ctrl+,")||request_preferences) {request_preferences=true;}//TODO
+            if (ImGui::MenuItem("Quit", "Ctrl+Q")||request_quit) { request_quit=true; }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Edit")) {
-            if (ImGui::MenuItem("Edit Fragment Shader")){}
+            if (ImGui::MenuItem("Edit Fragment Shader")){}//TODO
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
     }
-
+    if(request_save){
+        SDL_ShowSaveFileDialog(save_callback, NULL, window, file_filters, SDL_arraysize(file_filters), NULL);
+    }
+    if(request_load){
+        SDL_ShowOpenFileDialog(load_callback, NULL, window, file_filters, SDL_arraysize(file_filters), NULL,false);
+    }
+    if(request_preferences){//TODO
+        return SDL_APP_SUCCESS;
+    }
+    if(request_quit){
+        return SDL_APP_SUCCESS;
+    }
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
     
