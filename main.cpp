@@ -15,9 +15,10 @@ static SDL_Window *window = NULL;
 static SDL_GLContext gl_context = NULL;
 static GLuint shaderProgram;
 static GLuint VAO, VBO;
+static bool pendingShaderReload = false;
 
 // DEFAULT SHADERS ////
-const char* defaultVertexShader   = R"(
+static std::string defaultVertexShader   = R"(
     #version 330 core
     layout (location = 0) in vec3 aPos;
   
@@ -29,7 +30,8 @@ const char* defaultVertexShader   = R"(
     }
 )";
 
-const char* defaultFragmentShader = R"(
+// default Fragment Shader is also current shader
+static std::string defaultFragmentShader = R"(
     #version 330 core
 
     uniform vec2 u_resolution;
@@ -100,26 +102,28 @@ GLuint LoadShader(const char* vertexPath, const char* fragmentPath) {
 }
 
 GLuint LoadDefaultShader(){
+    const char* vsrc = defaultVertexShader.c_str(); 
+    const char* fsrc = defaultFragmentShader.c_str();
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader,1,&defaultVertexShader,NULL);
+    glShaderSource(vertexShader,1,&vsrc,NULL);
     glCompileShader(vertexShader);
     CheckShaderCompilation(vertexShader,"VERTEX");
 
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader,1,&defaultFragmentShader,NULL);
+    glShaderSource(fragmentShader,1,&fsrc,NULL);
     glCompileShader(fragmentShader);
     CheckShaderCompilation(fragmentShader,"FRAGMENT");
 
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram,vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-    CheckShaderLinking(shaderProgram);
+    GLuint tempShaderProgram = glCreateProgram();
+    glAttachShader(tempShaderProgram,vertexShader);
+    glAttachShader(tempShaderProgram, fragmentShader);
+    glLinkProgram(tempShaderProgram);
+    CheckShaderLinking(tempShaderProgram);
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    return shaderProgram;
+    return tempShaderProgram;
 }
 
 void CheckGLError(const char* function) {
@@ -135,19 +139,21 @@ static const SDL_DialogFileFilter file_filters[] = {
     { "All files",   "*" }
 };
 
-static void SDLCALL save_callback(void* userdata, const char* const* filelist, int filter){// TODO
+static void SDLCALL save_callback(void* userdata, const char* const* filelist, int filter){
     if (!filelist) {
         SDL_Log("An error occured: %s", SDL_GetError());
         return;
     } else if (!*filelist) {
-        SDL_Log("The user did not select any file.");
-        SDL_Log("Most likely, the dialog was canceled.");
+        SDL_Log("The dialog was canceled.");
         return;
     }
 
-    while (*filelist) {
-        SDL_Log("Full path to selected file: '%s'", *filelist);
-        filelist++;
+    const char* save_path = filelist[0];
+    size_t data_size = SDL_strlen(defaultFragmentShader.c_str()) + 1;
+    if (SDL_SaveFile(save_path, defaultFragmentShader.c_str(), data_size)) {
+        SDL_Log("Successfully saved file: '%s'", save_path);
+    } else {
+        SDL_Log("Failed to save file: %s", SDL_GetError());
     }
 
     if (filter < 0) {
@@ -172,11 +178,16 @@ static void SDLCALL load_callback(void* userdata, const char* const* filelist, i
         return;
     }
 
-    while (*filelist) {
-        SDL_Log("Full path to selected file: '%s'", *filelist);
-        filelist++;
+    const char* load_path = filelist[0];
+    size_t fileSize = 0;
+    void* fileData = SDL_LoadFile(load_path, &fileSize);
+    if (fileData == NULL) {
+        SDL_Log("Error loading file: ",SDL_GetError()); 
+        return;
     }
-
+    defaultFragmentShader = std::string((char*)fileData, fileSize);
+    SDL_free(fileData);
+    pendingShaderReload = true;
     if (filter < 0) {
         SDL_Log("The current platform does not support fetching "
                 "the selected filter, or the user did not select"
@@ -270,6 +281,15 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
 
 /* loop */
 SDL_AppResult SDL_AppIterate(void *appstate){
+    if (pendingShaderReload) {
+        GLuint newProg = LoadDefaultShader();
+        if (newProg != 0) {
+            glDeleteProgram(shaderProgram);
+            shaderProgram = newProg;
+        }
+        pendingShaderReload = false;
+    }
+
     float time = SDL_GetTicks()/1000.0f; 
 	int w, h;
     float x,y;
