@@ -3,6 +3,7 @@
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_opengl3.h"
+#include "TextEditor.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_dialog.h>
@@ -16,32 +17,33 @@ static SDL_GLContext gl_context = NULL;
 static GLuint shaderProgram;
 static GLuint VAO, VBO;
 static bool pendingShaderReload = false;
-
+static bool show_editor = false;
+TextEditor editor;
 // DEFAULT SHADERS ////
 static std::string defaultVertexShader   = R"(
-    #version 330 core
-    layout (location = 0) in vec3 aPos;
+#version 330 core
+layout (location = 0) in vec3 aPos;
   
-    out vec4 vertexColor;
+out vec4 vertexColor;
 
-    void main(){
-        gl_Position = vec4(aPos, 1.0);
-        vertexColor = vec4(0.0, 0.0, 0.0, 0.0);
-    }
+void main(){
+    gl_Position = vec4(aPos, 1.0);
+    vertexColor = vec4(0.0, 0.0, 0.0, 0.0);
+}
 )";
 
 // default Fragment Shader is also current shader
 static std::string defaultFragmentShader = R"(
-    #version 330 core
+#version 330 core
 
-    uniform vec2 u_resolution;
-    uniform vec2 u_mouse;
-    uniform float u_time;
+uniform vec2 u_resolution;
+uniform vec2 u_mouse;
+uniform float u_time;
     
-    void main(){
-        vec2 st = gl_FragCoord.xy/u_resolution;
-        gl_FragColor = vec4(st.x,st.y,abs(sin(u_time)),abs(cos(u_time)));
-    } 
+void main(){
+    vec2 st = gl_FragCoord.xy/u_resolution;
+    gl_FragColor = vec4(st.x,st.y,abs(sin(u_time)),abs(cos(u_time)));
+} 
 )";
 
 // OpenGL Helpers ////
@@ -223,7 +225,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]){
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;        // Enable Docking
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;      // Enable Multi-Viewport
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;      // Enable Multi-Viewport // TODO: doesn't play well with editor
     io.FontGlobalScale = 1.5f;
     ImGui::StyleColorsDark();
 
@@ -231,6 +233,16 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]){
     ImGui_ImplSDL3_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init();
 
+    // setup text editor
+    auto lang = TextEditor::LanguageDefinition::GLSL();
+    editor.SetLanguageDefinition(lang);
+    editor.SetText(defaultFragmentShader);
+    editor.SetHandleKeyboardInputs(true);
+    editor.SetReadOnly(false);
+    SDL_StartTextInput(window);
+    if(editor.IsImGuiChildIgnored()){
+        SDL_Log("ignored");
+    }
     return SDL_APP_CONTINUE;
 }
 
@@ -239,6 +251,10 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
     ImGui_ImplSDL3_ProcessEvent(event);
     if (event->type == SDL_EVENT_QUIT) {
         return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
+    }
+    if (event->type == SDL_EVENT_TEXT_INPUT) {
+        ImGuiIO& io = ImGui::GetIO();
+        io.AddInputCharactersUTF8(event->text.text);
     }
     return SDL_APP_CONTINUE;
 }
@@ -250,6 +266,7 @@ SDL_AppResult SDL_AppIterate(void *appstate){
         if (newProg != 0) {
             glDeleteProgram(shaderProgram);
             shaderProgram = newProg;
+            editor.SetText(defaultFragmentShader);
         }
         pendingShaderReload = false;
     }
@@ -271,6 +288,7 @@ SDL_AppResult SDL_AppIterate(void *appstate){
     bool request_load = ImGui::Shortcut((ImGuiKey_O|ImGuiMod_Ctrl),ImGuiInputFlags_RouteGlobal);
     bool request_preferences = ImGui::Shortcut((ImGuiKey_Comma|ImGuiMod_Ctrl),ImGuiInputFlags_RouteGlobal);
     bool request_quit = ImGui::Shortcut((ImGuiKey_Q|ImGuiMod_Ctrl),ImGuiInputFlags_RouteGlobal);
+    bool request_editor = ImGui::Shortcut((ImGuiKey_E|ImGuiMod_Ctrl),ImGuiInputFlags_RouteGlobal);
 
 
     if(ImGui::BeginMainMenuBar()){
@@ -285,10 +303,18 @@ SDL_AppResult SDL_AppIterate(void *appstate){
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Edit")) {
-            if (ImGui::MenuItem("Edit Fragment Shader")){}//TODO
+            ImGui::MenuItem("Toggle Editor","Ctrl+E",&show_editor);
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
+    }
+
+    if(show_editor){
+        editor.Render("Fragment Shader");
+    }
+
+    if(request_editor){
+        show_editor=!show_editor;
     }
     if(request_save){
         SDL_ShowSaveFileDialog(save_callback, NULL, window, file_filters, SDL_arraysize(file_filters), NULL);
