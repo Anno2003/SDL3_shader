@@ -18,6 +18,7 @@ static GLuint shaderProgram;
 static GLuint VAO, VBO;
 static bool pendingShaderReload = false;
 static bool show_editor = false;
+static bool show_metrics = false;
 TextEditor editor;
 // DEFAULT SHADERS ////
 static std::string defaultVertexShader   = R"(
@@ -239,10 +240,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]){
     editor.SetText(defaultFragmentShader);
     editor.SetHandleKeyboardInputs(true);
     editor.SetReadOnly(false);
+    editor.SetImGuiChildIgnored(true);
     SDL_StartTextInput(window);
-    if(editor.IsImGuiChildIgnored()){
-        SDL_Log("ignored");
-    }
     return SDL_APP_CONTINUE;
 }
 
@@ -251,10 +250,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
     ImGui_ImplSDL3_ProcessEvent(event);
     if (event->type == SDL_EVENT_QUIT) {
         return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
-    }
-    if (event->type == SDL_EVENT_TEXT_INPUT) {
-        ImGuiIO& io = ImGui::GetIO();
-        io.AddInputCharactersUTF8(event->text.text);
     }
     return SDL_APP_CONTINUE;
 }
@@ -289,8 +284,12 @@ SDL_AppResult SDL_AppIterate(void *appstate){
     bool request_preferences = ImGui::Shortcut((ImGuiKey_Comma|ImGuiMod_Ctrl),ImGuiInputFlags_RouteGlobal);
     bool request_quit = ImGui::Shortcut((ImGuiKey_Q|ImGuiMod_Ctrl),ImGuiInputFlags_RouteGlobal);
     bool request_editor = ImGui::Shortcut((ImGuiKey_E|ImGuiMod_Ctrl),ImGuiInputFlags_RouteGlobal);
-
-
+    if(ImGui::Shortcut((ImGuiKey_F12),ImGuiInputFlags_RouteGlobal)){
+        show_metrics = !show_metrics;
+    }
+    if(show_metrics){
+        ImGui::ShowMetricsWindow();
+    }
     if(ImGui::BeginMainMenuBar()){
         if (ImGui::BeginMenu("File")) {
             
