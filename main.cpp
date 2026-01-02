@@ -245,6 +245,19 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
     if (event->type == SDL_EVENT_QUIT) {
         return SDL_APP_SUCCESS; 
     }
+    if (event->type == SDL_EVENT_DROP_FILE){
+        SDL_Log("%s",event->drop.data);
+        const char* load_path = event->drop.data;
+        size_t fileSize = 0;
+        void* fileData = SDL_LoadFile(load_path, &fileSize);
+        if (fileData == NULL) {
+            SDL_Log("Error loading file: ",SDL_GetError()); 
+            return SDL_APP_CONTINUE;
+        }
+        defaultFragmentShader = std::string((char*)fileData, fileSize);
+        SDL_free(fileData);
+        pendingShaderReload = true;
+    }
     if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
         if (event->button.button == SDL_BUTTON_LEFT) {
             isLeftDown = true;

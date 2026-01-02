@@ -1,7 +1,8 @@
 # SDL3 Shader
-a small sdl3 program that displays shader into a transparent window that always stays on top.
+a small sdl3 program that displays fragment shader into a transparent window that always stays on top.
 <img src="assets/example2.png" width="45%" height="45%"/>  
-you can change the shader by loading a glsl shader. 
+you can change the shader by loading a glsl shader from the file menu (`ctrl+o`), 
+or also drag and drop a glsl file into the window. 
 
 # supported Uniforms 
 - float u_time  = time from SDL_GetTicks()/1000.0f
