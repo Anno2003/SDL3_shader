@@ -3,7 +3,6 @@
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_opengl3.h"
-#include "TextEditor.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_dialog.h>
@@ -17,9 +16,7 @@ static SDL_GLContext gl_context = NULL;
 static GLuint shaderProgram;
 static GLuint VAO, VBO;
 static bool pendingShaderReload = false;
-static bool show_editor = false;
 static bool show_metrics = false;
-TextEditor editor;
 // DEFAULT SHADERS ////
 static std::string defaultVertexShader   = R"(
 #version 330 core
@@ -234,13 +231,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]){
     ImGui_ImplSDL3_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init();
 
-    // setup text editor
-    auto lang = TextEditor::LanguageDefinition::GLSL();
-    editor.SetLanguageDefinition(lang);
-    editor.SetText(defaultFragmentShader);
-    editor.SetHandleKeyboardInputs(true);
-    editor.SetReadOnly(false);
-    editor.SetImGuiChildIgnored(true);
     SDL_StartTextInput(window);
     return SDL_APP_CONTINUE;
 }
@@ -261,7 +251,6 @@ SDL_AppResult SDL_AppIterate(void *appstate){
         if (newProg != 0) {
             glDeleteProgram(shaderProgram);
             shaderProgram = newProg;
-            editor.SetText(defaultFragmentShader);
         }
         pendingShaderReload = false;
     }
@@ -297,33 +286,22 @@ SDL_AppResult SDL_AppIterate(void *appstate){
             if (ImGui::MenuItem("Load Shader", "Ctrl+O")||request_load) {request_load = true;}
             
             ImGui::Separator();
-            if (ImGui::MenuItem("Preferences", "Ctrl+,")||request_preferences) {request_preferences=true;}//TODO
+            //if (ImGui::MenuItem("Preferences", "Ctrl+,")||request_preferences) {request_preferences=true;}//TODO
             if (ImGui::MenuItem("Quit", "Ctrl+Q")||request_quit) { request_quit=true; }
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Edit")) {
-            ImGui::MenuItem("Toggle Editor","Ctrl+E",&show_editor);
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
     }
 
-    if(show_editor){
-        editor.Render("Fragment Shader");
-    }
-
-    if(request_editor){
-        show_editor=!show_editor;
-    }
     if(request_save){
         SDL_ShowSaveFileDialog(save_callback, NULL, window, file_filters, SDL_arraysize(file_filters), NULL);
     }
     if(request_load){
         SDL_ShowOpenFileDialog(load_callback, NULL, window, file_filters, SDL_arraysize(file_filters), NULL,false);
     }
-    if(request_preferences){//TODO
-        return SDL_APP_SUCCESS;
-    }
+    // if(request_preferences){//TODO
+    //     return SDL_APP_SUCCESS;
+    // }
     if(request_quit){
         return SDL_APP_SUCCESS;
     }
