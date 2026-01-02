@@ -17,6 +17,10 @@ static GLuint shaderProgram;
 static GLuint VAO, VBO;
 static bool pendingShaderReload = false;
 static bool show_metrics = false;
+
+float clickX, clickY;
+bool isLeftDown = false;
+
 // DEFAULT SHADERS ////
 static std::string defaultVertexShader   = R"(
 #version 330 core
@@ -239,8 +243,21 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]){
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
     ImGui_ImplSDL3_ProcessEvent(event);
     if (event->type == SDL_EVENT_QUIT) {
-        return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
+        return SDL_APP_SUCCESS; 
     }
+    if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+        if (event->button.button == SDL_BUTTON_LEFT) {
+            isLeftDown = true;
+            clickX = event->button.x;
+            clickY = event->button.y;
+        }
+    }
+    if (event->type == SDL_EVENT_MOUSE_BUTTON_UP) {
+        if (event->button.button == SDL_BUTTON_LEFT) {
+            isLeftDown = false;
+        }
+    }
+
     return SDL_APP_CONTINUE;
 }
 
@@ -313,12 +330,41 @@ SDL_AppResult SDL_AppIterate(void *appstate){
 
     glUniform1f(glGetUniformLocation(shaderProgram,"u_time"),time);
     CheckGLError("glUniform1f");
-	
 	glUniform2f(glGetUniformLocation(shaderProgram, "u_resolution"), (float)w, (float)h);
 	CheckGLError("glUniform2f");
-
     glUniform2f(glGetUniformLocation(shaderProgram,"u_mouse"),x,y);
     CheckGLError("glUniform2f");
+
+    // shadertoy uniforms
+    // uniform vec3      iResolution;           // viewport resolution (in pixels)
+    glUniform3f(glGetUniformLocation(shaderProgram,"iResolution"),(float)w,(float)h,1.0f);
+    CheckGLError("glUniform3f");
+    // uniform float     iTime;                 // shader playback time (in seconds)
+    glUniform1f(glGetUniformLocation(shaderProgram,"iTime"),time);
+    CheckGLError("glUniform1f");
+    // uniform float     iTimeDelta;            // render time (in seconds)
+    // uniform float     iFrameRate;            // shader frame rate
+    // uniform int       iFrame;                // shader playback frame
+    // uniform float     iChannelTime[4];       // channel playback time (in seconds)
+    // uniform vec3      iChannelResolution[4]; // channel resolution (in pixels)
+    // uniform vec4      iMouse;                // mouse pixel coords. xy: current (if MLB down), zw: click
+    // Flip Y to match Shadertoy
+    float currentY = h - (float)y;
+    float lastClickY = h - clickY;
+
+    if (isLeftDown) {   
+        // While button is down: xy = current pos, zw = start pos
+        glUniform4f(glGetUniformLocation(shaderProgram, "iMouse"), (float)x, currentY, clickX, lastClickY);
+    } else {
+    // Shadertoy standard: zw becomes negative (or remains last click) when up
+    // Usually, you just pass the last coordinates with a negative sign or flag
+        glUniform4f(glGetUniformLocation(shaderProgram, "iMouse"), 
+                (float)x, currentY, -clickX, -lastClickY);
+    }
+    CheckGLError("glUniform4f");
+    // uniform samplerXX iChannel0..3;          // input channel. XX = 2D/Cube
+    // uniform vec4      iDate;                 // (year, month, day, time in seconds)
+    // uniform float     iSampleRate;           // sound sample rate (i.e., 44100)
 
 	glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
