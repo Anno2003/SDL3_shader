@@ -229,6 +229,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]){
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;        // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;      // Enable Multi-Viewport // TODO: doesn't play well with editor
     io.FontGlobalScale = 1.5f;
+    io.IniFilename = nullptr;
     ImGui::StyleColorsDark();
 
     // Setup Platform/Renderer backends
